@@ -46,7 +46,6 @@ all original Shapefile components.
 - Windows, Linux, and macOS
 - point, line, polygon, and supported multipart vector layers
 - ESRI Shapefile output with UTF-8 encoding
-- no third-party Python packages or bundled binary files
 
 ## Installation
 
@@ -65,32 +64,16 @@ Load `parcels.geojson`, use `parcel_id` as the duplicate-check field, retain
 `owner` and `block_name`, and create an output Shapefile. See
 `sample_data/README.md` for the expected result.
 
-## Activation and network access
+## Activation
 
 The QGIS edition uses these established License Hub identifiers:
 
 - Product code: `FIDU`
 - Fixed code: `SW`
 - Trial allowance: two successful analyses
-- Request page: <https://aktivasi.ruangspasial.my.id/request>
 - User guide: <https://aktivasi.ruangspasial.my.id/help/find-duplicate-qgis>
 
-Failed validation or output creation does not consume a trial. License
-activation uses the RUANG SPASIAL License Hub over HTTPS. An activated license
-is checked before each analysis so a revoked or inactive license stops the
-tool.
-
-## Privacy
-
-For activation and license-status checks, the plugin sends the product code,
-fixed code, product name, activation code, and a Device ID to RUANG SPASIAL
-License Hub. The Device ID is the first 32 uppercase characters of a SHA-256
-hash derived from a stable machine identifier; the raw machine identifier is
-not transmitted. Local activation and trial state is stored in the current
-user's application-data directory.
-
-Input features, attribute values, output Shapefiles, and duplicate-analysis
-results are processed locally and are not transmitted by the plugin.
+Failed validation or output creation does not consume a trial.
 
 ## Support and issues
 

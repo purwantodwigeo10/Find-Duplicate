@@ -7,8 +7,7 @@ import shutil
 import tempfile
 import traceback
 
-from qgis.PyQt.QtCore import Qt, QUrl
-from .qt_compat import FIELD_STRING, FIELD_INT
+from qgis.PyQt.QtCore import Qt, QUrl, QVariant
 from qgis.PyQt.QtGui import QDesktopServices, QPixmap
 from qgis.PyQt.QtWidgets import (
     QApplication,
@@ -24,6 +23,7 @@ from qgis.PyQt.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QProgressBar,
     QTextEdit,
     QVBoxLayout,
 )
@@ -70,9 +70,9 @@ class ActivationDialog(QDialog):
         self.setWindowTitle('License Activation')
         window_flags = (
             self.windowFlags()
-            | Qt.WindowType.WindowMinimizeButtonHint
-            | Qt.WindowType.WindowMaximizeButtonHint
-            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowMinimizeButtonHint
+            | Qt.WindowMaximizeButtonHint
+            | Qt.WindowCloseButtonHint
         )
         self.setWindowFlags(window_flags)
         self.setSizeGripEnabled(True)
@@ -217,9 +217,9 @@ class FindDuplicateDialog(QDialog):
         self.setWindowTitle('Find Duplicate')
         window_flags = (
             self.windowFlags()
-            | Qt.WindowType.WindowMinimizeButtonHint
-            | Qt.WindowType.WindowMaximizeButtonHint
-            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowMinimizeButtonHint
+            | Qt.WindowMaximizeButtonHint
+            | Qt.WindowCloseButtonHint
         )
         self.setWindowFlags(window_flags)
         self.setSizeGripEnabled(True)
@@ -243,17 +243,17 @@ class FindDuplicateDialog(QDialog):
                 pixmap.scaled(
                     170,
                     170,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation))
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation))
         self.lbl_logo.setMinimumWidth(220)
-        self.lbl_logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_logo.setAlignment(Qt.AlignCenter)
         hero_layout.addWidget(self.lbl_logo)
 
         center = QVBoxLayout()
         self.lbl_title = QLabel(
             "<span style='font-size:24px; font-weight:700;'>"
             'Find Duplicate</span>')
-        self.lbl_title.setTextFormat(Qt.TextFormat.RichText)
+        self.lbl_title.setTextFormat(Qt.RichText)
         self.lbl_desc = QLabel(
             'Identify duplicate or unique values in a selected field and '
             'create a documented output Shapefile for data-quality review.')
@@ -265,17 +265,17 @@ class FindDuplicateDialog(QDialog):
 
         right = QVBoxLayout()
         self.lbl_plugin_status = QLabel()
-        self.lbl_plugin_status.setTextFormat(Qt.TextFormat.RichText)
+        self.lbl_plugin_status.setTextFormat(Qt.RichText)
         self.lbl_activation = QLabel()
-        self.lbl_activation.setTextFormat(Qt.TextFormat.RichText)
+        self.lbl_activation.setTextFormat(Qt.RichText)
         self.btn_manage = QPushButton('Manage Activation')
         self.btn_manage.clicked.connect(self.show_activation_dialog)
         self.btn_help_main = QPushButton('User Guide and Activation')
         self.btn_help_main.clicked.connect(self.open_help_page)
-        right.addWidget(self.lbl_plugin_status, 0, Qt.AlignmentFlag.AlignRight)
-        right.addWidget(self.lbl_activation, 0, Qt.AlignmentFlag.AlignRight)
-        right.addWidget(self.btn_manage, 0, Qt.AlignmentFlag.AlignRight)
-        right.addWidget(self.btn_help_main, 0, Qt.AlignmentFlag.AlignRight)
+        right.addWidget(self.lbl_plugin_status, 0, Qt.AlignRight)
+        right.addWidget(self.lbl_activation, 0, Qt.AlignRight)
+        right.addWidget(self.btn_manage, 0, Qt.AlignRight)
+        right.addWidget(self.btn_help_main, 0, Qt.AlignRight)
         right.addStretch(1)
         hero_layout.addLayout(right)
         main.addWidget(hero)
@@ -328,6 +328,16 @@ class FindDuplicateDialog(QDialog):
         output_grid.addWidget(self.btn_output, 0, 2)
         layout.addLayout(output_grid)
 
+        progress_row = QHBoxLayout()
+        self.lbl_progress = QLabel('Ready')
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 100)
+        self.progress.setValue(0)
+        self.progress.setFormat('%p%')
+        progress_row.addWidget(self.lbl_progress)
+        progress_row.addWidget(self.progress, 1)
+        layout.addLayout(progress_row)
+
         self.log = QTextEdit()
         self.log.setReadOnly(True)
         self.log.setMinimumHeight(260)
@@ -353,7 +363,7 @@ class FindDuplicateDialog(QDialog):
 
     def show_activation_dialog(self):
         dialog = ActivationDialog(self.lm, self)
-        dialog.exec()
+        dialog.exec_()
         self.refresh_license_status()
 
     def refresh_license_status(self):
@@ -381,6 +391,13 @@ class FindDuplicateDialog(QDialog):
 
     def log_msg(self, message):
         self.log.append(str(message))
+
+    def set_progress(self, value, message):
+        """Update the live analysis progress without starting a new thread."""
+        value = max(0, min(100, int(value)))
+        self.progress.setValue(value)
+        self.lbl_progress.setText(str(message))
+        QApplication.processEvents()
 
     def load_layers(self):
         self.cmb_layer.clear()
@@ -415,8 +432,8 @@ class FindDuplicateDialog(QDialog):
             name = field.name()
             self.cmb_field.addItem(name)
             item = QListWidgetItem(name)
-            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            item.setCheckState(Qt.CheckState.Unchecked)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Unchecked)
             self.lst_select_fields.addItem(item)
 
     def choose_input_file(self):
@@ -453,37 +470,48 @@ class FindDuplicateDialog(QDialog):
 
     def select_all_fields(self):
         for index in range(self.lst_select_fields.count()):
-            self.lst_select_fields.item(index).setCheckState(Qt.CheckState.Checked)
+            self.lst_select_fields.item(index).setCheckState(Qt.Checked)
 
     def unselect_all_fields(self):
         for index in range(self.lst_select_fields.count()):
-            self.lst_select_fields.item(index).setCheckState(Qt.CheckState.Unchecked)
+            self.lst_select_fields.item(index).setCheckState(Qt.Unchecked)
 
     def selected_fields(self):
         names = []
         for index in range(self.lst_select_fields.count()):
             item = self.lst_select_fields.item(index)
-            if item.checkState() == Qt.CheckState.Checked:
+            if item.checkState() == Qt.Checked:
                 names.append(item.text())
         return names
 
-    def run_tool(self):
-        can_run, message = self.lm.can_run()
-        if not can_run:
-            self.refresh_license_status()
-            QMessageBox.warning(self, PRODUCT_NAME, message)
+    def run_tool(self, checked=False):
+        del checked
+        if getattr(self, '_operation_running', False):
             return
-
-        using_trial = not self.lm.is_activated_local()
+        self._operation_running = True
+        self.btn_run.setEnabled(False)
+        self.btn_cancel.setEnabled(False)
+        self.set_progress(0, 'Checking license and input...')
         try:
+            can_run, message = self.lm.can_run()
+            if not can_run:
+                self.refresh_license_status()
+                self.set_progress(0, 'Unable to start')
+                QMessageBox.warning(self, PRODUCT_NAME, message)
+                return
+
+            using_trial = not self.lm.is_activated_local()
+            self.set_progress(10, 'License check completed')
             output = self._process()
             if using_trial:
+                self.set_progress(97, 'Recording successful trial run...')
                 self.lm.consume_trial_for_run()
                 self.log_msg(
                     'Trial run completed. Remaining trial: %s of %s.' % (
                         self.lm.trial_remaining(),
                         TRIAL_LIMIT,
                     ))
+            self.set_progress(100, 'Analysis completed')
             self.log_msg('Process completed. Output: %s' % output)
             QMessageBox.information(
                 self,
@@ -491,14 +519,20 @@ class FindDuplicateDialog(QDialog):
                 'Process completed.\n\nOutput: %s' % output)
             self.refresh_license_status()
         except Exception as error:
+            self.lbl_progress.setText('Analysis failed')
             self.log_msg(
                 'ERROR: %s\n%s' % (error, traceback.format_exc()))
             QMessageBox.critical(
                 self,
                 PRODUCT_NAME,
                 'Failed to run tool:\n%s' % error)
+        finally:
+            self.btn_run.setEnabled(True)
+            self.btn_cancel.setEnabled(True)
+            self._operation_running = False
 
     def _process(self):
+        self.set_progress(15, 'Validating analysis settings...')
         layer = self.current_layer()
         if layer is None or not layer.isValid():
             raise RuntimeError('Please select a valid input vector layer.')
@@ -530,7 +564,19 @@ class FindDuplicateDialog(QDialog):
                 keep_names.append(name)
         input_indexes = [layer.fields().indexOf(name) for name in keep_names]
 
-        features = list(layer.getFeatures())
+        self.set_progress(22, 'Reading input features...')
+        features = []
+        total_source = max(1, int(layer.featureCount()))
+        update_every = max(1, total_source // 100)
+        for index, feature in enumerate(layer.getFeatures(), 1):
+            features.append(feature)
+            if index == total_source or index % update_every == 0:
+                self.set_progress(
+                    22 + int(10 * min(index, total_source) / total_source),
+                    'Reading feature %s of %s...' % (
+                        index,
+                        total_source,
+                    ))
         if not features:
             raise RuntimeError(
                 'The selected input layer contains no features.')
@@ -538,6 +584,7 @@ class FindDuplicateDialog(QDialog):
             features,
             duplicate_field)
 
+        self.set_progress(52, 'Preparing output fields...')
         memory_layer = self._create_memory_layer(layer)
         provider = memory_layer.dataProvider()
         output_fields = self._build_output_fields(layer, input_indexes)
@@ -557,7 +604,9 @@ class FindDuplicateDialog(QDialog):
             raise RuntimeError('Failed to create output features.')
         memory_layer.updateExtents()
 
+        self.set_progress(82, 'Writing output Shapefile...')
         self._write_output(memory_layer, output_path, len(output_features))
+        self.set_progress(94, 'Opening and validating the final output...')
         output_layer = QgsVectorLayer(
             output_path,
             os.path.basename(output_path),
@@ -566,6 +615,7 @@ class FindDuplicateDialog(QDialog):
             raise RuntimeError(
                 'The output was written but could not be reopened by QGIS.')
         QgsProject.instance().addMapLayer(output_layer)
+        self.set_progress(96, 'Final output added to QGIS')
         return output_path
 
     @staticmethod
@@ -581,10 +631,19 @@ class FindDuplicateDialog(QDialog):
 
     def _collect_value_locations(self, features, duplicate_field):
         locations = {}
-        for feature in features:
+        total = max(1, len(features))
+        update_every = max(1, total // 100)
+        for index, feature in enumerate(features, 1):
             key = value_key(feature[duplicate_field])
             locations.setdefault(key, []).append(
                 self._feature_xy(feature))
+            if index == total or index % update_every == 0:
+                self.set_progress(
+                    32 + int(18 * index / total),
+                    'Counting duplicate values %s of %s...' % (
+                        index,
+                        total,
+                    ))
         return locations
 
     def _build_output_fields(self, layer, input_indexes):
@@ -597,10 +656,10 @@ class FindDuplicateDialog(QDialog):
             output_fields.append(output_field)
 
         analysis_fields = (
-            QgsField('NOTES', FIELD_STRING, len=50),
-            QgsField('FREQUENCY', FIELD_INT),
-            QgsField('LOCATIONS', FIELD_STRING, len=254),
-            QgsField('DETAIL', FIELD_STRING, len=254),
+            QgsField('NOTES', QVariant.String, len=50),
+            QgsField('FREQUENCY', QVariant.Int),
+            QgsField('LOCATIONS', QVariant.String, len=254),
+            QgsField('DETAIL', QVariant.String, len=254),
         )
         for field in analysis_fields:
             field.setName(unique_dbf_name(field.name(), used_names))
@@ -633,7 +692,9 @@ class FindDuplicateDialog(QDialog):
             value_locations,
             output_fields):
         output_features = []
-        for feature in features:
+        total = max(1, len(features))
+        update_every = max(1, total // 100)
+        for index, feature in enumerate(features, 1):
             value = feature[duplicate_field]
             locations = value_locations.get(value_key(value), [])
             frequency = len(locations)
@@ -677,6 +738,13 @@ class FindDuplicateDialog(QDialog):
             ))
             output_feature.setAttributes(attributes)
             output_features.append(output_feature)
+            if index == total or index % update_every == 0:
+                self.set_progress(
+                    56 + int(22 * index / total),
+                    'Classifying feature %s of %s...' % (
+                        index,
+                        total,
+                    ))
         return output_features
 
     def _write_output(self, memory_layer, output_path, expected_count):
@@ -691,16 +759,17 @@ class FindDuplicateDialog(QDialog):
             options = QgsVectorFileWriter.SaveVectorOptions()
             options.driverName = 'ESRI Shapefile'
             options.fileEncoding = 'UTF-8'
-            result = QgsVectorFileWriter.writeAsVectorFormatV3(
+            result = QgsVectorFileWriter.writeAsVectorFormatV2(
                 memory_layer,
                 temporary_path,
                 QgsProject.instance().transformContext(),
                 options)
             error_code = result[0] if isinstance(result, tuple) else result
-            if error_code != QgsVectorFileWriter.WriterError.NoError:
+            if error_code != QgsVectorFileWriter.NoError:
                 raise RuntimeError(
                     'QGIS failed to save the output Shapefile.')
 
+            self.set_progress(88, 'Validating temporary output...')
             check_layer = QgsVectorLayer(
                 temporary_path,
                 'FindDuplicateValidation',
@@ -713,6 +782,7 @@ class FindDuplicateDialog(QDialog):
                     'The output feature count does not match the input.')
             del check_layer
 
+            self.set_progress(92, 'Finalizing output Shapefile...')
             commit_shapefile(temporary_path, output_path)
         finally:
             shutil.rmtree(temporary_directory, ignore_errors=True)

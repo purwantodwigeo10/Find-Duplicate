@@ -6,11 +6,7 @@ import os
 
 from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtGui import QDesktopServices, QIcon
-from qgis.PyQt.QtWidgets import QMessageBox
-try:
-    from qgis.PyQt.QtGui import QAction
-except ImportError:  # Qt5
-    from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QMessageBox
 
 from .fd_dialog import FindDuplicateDialog, HELP_URL
 

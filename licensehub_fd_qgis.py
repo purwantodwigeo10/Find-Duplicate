@@ -269,7 +269,7 @@ class LicenseManager(object):
     def _post_json_qgis(self, url, payload, timeout):
         request = QNetworkRequest(QUrl(url))
         request.setHeader(
-            QNetworkRequest.KnownHeaders.ContentTypeHeader,
+            QNetworkRequest.ContentTypeHeader,
             "application/json")
         request.setRawHeader(
             QByteArray(b"Accept"),
@@ -291,7 +291,7 @@ class LicenseManager(object):
         reply.finished.connect(event_loop.quit)
         timer.timeout.connect(event_loop.quit)
         timer.start(max(1, int(timeout * 1000)))
-        event_loop.exec()
+        event_loop.exec_()
 
         if not reply.isFinished():
             reply.abort()
@@ -305,7 +305,7 @@ class LicenseManager(object):
         parsed = self._decode_response(raw)
         if parsed is not None:
             return parsed, None
-        if error_code != QNetworkReply.NetworkError.NoError:
+        if error_code != QNetworkReply.NoError:
             return None, "License Hub request failed: %s" % error_text
         return None, "License Hub returned an invalid response."
 
@@ -331,13 +331,6 @@ class LicenseManager(object):
             or ""
         ).strip().upper()
         message = data.get("message") or ""
-        if (
-            data.get("active") is True
-            or data.get("approved") is True
-            or data.get("valid") is True
-            or status in ("ACTIVE", "AKTIF", "APPROVED", "VALID")
-        ):
-            return True, message or "License active."
         if status == "PENDING":
             return False, message or "License request is still pending."
         if (
@@ -356,6 +349,13 @@ class LicenseManager(object):
             )
         ):
             return False, message or "License is not active."
+        if (
+            data.get("active") is True
+            or data.get("approved") is True
+            or data.get("valid") is True
+            or status in ("ACTIVE", "AKTIF", "APPROVED", "VALID")
+        ):
+            return True, message or "License active."
         return None, message or "License status could not be verified."
 
     def _license_payload(self, activation_code):

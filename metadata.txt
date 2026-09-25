@@ -4,17 +4,17 @@ qgisMinimumVersion=3.22
 qgisMaximumVersion=3.99
 description=Identify duplicate and unique attribute values and create a documented Shapefile for spatial data-quality review.
 about=Find Duplicate checks one selected key field in a point, line, or polygon layer and labels every feature as DUPLICATE IDENTIFIED or UNIQUE IDENTIFIED.
-    The output keeps the key field and optional selected fields, adds frequency and location details, preserves the source geometry and CRS, and safely replaces an existing Shapefile only after the new output passes validation. No third-party Python packages or bundled binaries are required. Two successful trial runs are available before activation is required.
+    The output keeps the key field and optional selected fields, adds frequency and location details, preserves the source geometry and CRS, and safely replaces an existing Shapefile only after the new output passes validation.
 version=26.1.0
-author=Dwi Purwanto (RuangSpasial)
+author=Dwi Purwanto (Ruang Spasial)
 email=ruangspasial@gmail.com
 changelog=26.1.0
-    Correct Qt5 field enums to QVariant.String and QVariant.Int; retain QMetaType on Qt6.
-    Updated scoped Qt enums, dialog/event-loop execution, QAction imports and field types for Qt5/Qt6.
-    Use the QGIS V3 vector writer.
-    Improved duplicate and unique value identification for point, line, and polygon layers.
-    Refined output fields, frequency and location summaries, and safe Shapefile replacement.
-    Added sample data and clearer usage documentation.
+    Identifies duplicate and unique values in a selected attribute field.
+    Preserves selected attributes, source geometry, and coordinate reference system.
+    Adds frequency, matching locations, status notes, and readable result details.
+    Creates validated Shapefile output with safe DBF-compatible field names.
+    Displays live analysis progress from 0 to 100 percent.
+    Includes synthetic sample data and usage documentation.
 category=Vector
 tags=duplicates,data quality,attributes,validation,Shapefile
 homepage=https://aktivasi.ruangspasial.my.id/help/find-duplicate-qgis
@@ -22,7 +22,7 @@ tracker=https://github.com/purwantodwigeo10/Find-Duplicate/issues
 repository=https://github.com/purwantodwigeo10/Find-Duplicate
 license=GPL-3.0-or-later
 icon=icon.png
-experimental=True
+experimental=False
 deprecated=False
 hasProcessingProvider=False
 server=False
